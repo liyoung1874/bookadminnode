@@ -3,6 +3,7 @@ const { query } = require('express');
 const mysql = require('mysql');
 const { host, port, user, password, database } = require('./config');
 const debug = require('../utils/constent').debug;
+const { isObject } = require('../utils');
 
 // 连接数据库方法
 function connect() {
@@ -58,7 +59,47 @@ function qeuryOne(sql) {
     })
 }
 
+function insert(model, table) {
+    return new Promise((resolve, reject) => {
+        if (isObject(model)) {
+            const keys = [];
+            const values = [];
+            Object.keys(model).forEach(key => {
+                if (model.hasOwnProperty(key)) {
+                    keys.push(`\`${key}\``);
+                    values.push(`'${model[key]}'`);
+                }
+            })
+            if (keys.length > 0 && values.length > 0) {
+                let sql = `INSERT INTO \`${table}\` (`
+                const keysString = keys.join(',');
+                const valuesString = values.join(',');
+                sql = `${sql}${keysString}) VALUES (${valuesString})`;
+                debug && console.log(sql);
+                const conn = connect();
+                try {
+                    conn.query(sql, (err, result) => {
+                        if (err) {
+                            reject(err)
+                        } else {
+                            resolve(result)
+                        }
+                    })
+                } catch (err) {
+                    reject(err)
+                } finally {
+                    conn.end();
+                }
+            }else{
+                reject(new Error('插入数据库失败，插入数据没有键、值'));
+            }
+        } else {
+            reject(new Error('插入数据库失败，插入数据非对象'));
+        }
+    })
+}
 module.exports = {
     querySql,
-    qeuryOne
+    qeuryOne,
+    insert,
 }

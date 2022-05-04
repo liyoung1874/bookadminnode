@@ -3,6 +3,10 @@ const crypto = require('crypto'); // 用于处理 MD5 加密
 const jwt = require('jsonwebtoken');
 const { PRIVATE_KEY } = require('../utils/constent');
 
+function isObject(o){
+    return Object.prototype.toString.call(o) === '[object Object]';
+}
+
 // md5 加密
 function md5(str) {
     return crypto.createHash('md5').update(String(str)).digest('hex');
@@ -23,5 +27,6 @@ function decode(req) {
 
 module.exports = {
     md5,
-    decode
+    decode,
+    isObject,
 }
