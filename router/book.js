@@ -38,11 +38,27 @@ router.post('/create', (req, res, next) => {
     const book = new Book(null, req.body);
     bookService.insertBook(book)
         .then(() => {
-
+            new Result('上传电子书成功').success(res);
         })
         .catch(err => {
             next(boom.badImplementation(err));
         })
+})
+
+// 查询电子书
+router.get('/get', (req, res, next) => {
+    const { fileName } = req.query;
+    if(!fileName){
+        next(boom.badRequest(new Error('查询参数 fileName 不能为空')))
+    }else{
+        bookService.getBook(fileName)
+            .then((book) => {
+                new Result(book, '获取电子书成功').success(res);
+            })
+            .catch(err => {
+                new Result('获取电子书失败').file(err);
+            })
+    }
 })
 
 module.exports = router;

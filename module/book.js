@@ -76,7 +76,7 @@ class Book {
         this.createDt = new Date().getTime()
         this.updateDt = new Date().getTime()
         this.updateType = data.updateType === 0 ? data.updateType : UPDATE_TYPE_FROM_WEB
-        this.contents = data.contents;
+        this.contents = data.contents || [];
         this.category = data.category || 99;
         this.categoryText = data.categoryText || '自定义';
     }
@@ -212,6 +212,7 @@ class Book {
                 const xml = fs.readFileSync(ncxFilePath, 'utf-8');
                 const dir = path.dirname(ncxFilePath).replace(UPLOAD_PATH, '');
                 const fileName = this.fileName;
+                const unzipPath = this.unzipPath;
                 xml2js(xml, {
                     explicitArray: false,
                     ignoreAttrs: false,
@@ -229,8 +230,9 @@ class Book {
                             newNavMap.forEach((chapter, index) => {
                                 const src = chapter.content['$'].src;
                                 // 目录路径
+                                chapter.id = `${src}`;
+                                chapter.href = `${dir}/${src}`.replace(unzipPath, '');
                                 chapter.text = `${UPLOAD_URL}/${dir}/${src}`;
-                                // 目录名称
                                 chapter.label = chapter.navLabel.text || '';
                                 chapter.navId = chapter['$'].id;
                                 chapter.fileName = fileName;
@@ -238,16 +240,7 @@ class Book {
                                 chapters.push(chapter);
                             });
                             // 生成前端方便展示的树形图
-                            const chapterTree = [];
-                            chapters.forEach(c => {
-                                c.children = [];
-                                if (c.pid === '') {
-                                    chapterTree.push(c)
-                                } else {
-                                    const parent = chapters.find(_ => _.navId === c.pid);
-                                    parent.children.push(c);
-                                }
-                            })
+                            const chapterTree = Book.genContents(chapters);
                             resolve({ chapters, chapterTree });
                         } else {
                             reject(new Error('电子书目录树长度为 0，解析失败'))
@@ -279,8 +272,26 @@ class Book {
             createDt: this.createDt,
             updateDt: this.updateDt,
             updateType: this.updateType,
-            category:this.category,
-            categoryText:this.categoryText,
+            category: this.category,
+            categoryText: this.categoryText,
+        }
+    }
+
+    /* 获取电子书的目录数据 */
+    getContents() {
+        return this.contents;
+    }
+
+    /* 删除电子书文件 */
+    reset() {
+        if (Book.pathExists(this.filePath)) {
+            fs.unlinkSync(Book.genPath(this.filePath));
+        }
+        if (Book.pathExists(this.coverPath)) {
+            fs.unlinkSync(Book.genPath(this.coverPath));
+        }
+        if (Book.pathExists(this.unzipPath)) {
+            fs.rmdirSync(Book.genPath(this.unzipPath), { recursive: true });
         }
     }
 
@@ -291,6 +302,39 @@ class Book {
             path = `/${path}`
         }
         return `${UPLOAD_PATH}${path}`
+    }
+
+    /* 判断电子书的文件是否已经存在 */
+    static pathExists(path) {
+        if (path.startsWith(UPLOAD_PATH)) {
+            return fs.existsSync(path);
+        } else {
+            return fs.existsSync(Book.genPath(path));
+        }
+    }
+
+    /* 生成电子书的资源 url */
+    static genUrl(path) {
+        if (path.startsWith('/')) {
+            return `${UPLOAD_URL}${path}`
+        } else {
+            return `${UPLOAD_URL}/${path}`
+        }
+    }
+
+    /* 生成电子书目录 */
+    static genContents(contents){
+        const chapterTree = [];
+        contents.forEach(c => {
+            c.children = [];
+            if (c.pid === '') {
+                chapterTree.push(c)
+            } else {
+                const parent = contents.find(_ => _.navId === c.pid);
+                parent.children.push(c);
+            }
+        })
+        return chapterTree;
     }
 }
 
