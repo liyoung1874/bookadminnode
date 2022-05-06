@@ -45,6 +45,23 @@ router.post('/create', (req, res, next) => {
         })
 })
 
+// 更新电子书
+router.post('/update', (req, res, next) => {
+    const decoded = decode(req);
+    if(decoded && decoded.username){
+        req.body.username = decoded.username;
+    }
+    const book = new Book(null, req.body);
+    bookService.updateBook(book)
+        .then(() => {
+            new Result('更新电子书成功').success(res);
+        })
+        .catch(err => {
+            next(boom.badImplementation(err));
+        })
+})
+
+
 // 查询电子书
 router.get('/get', (req, res, next) => {
     const { fileName } = req.query;

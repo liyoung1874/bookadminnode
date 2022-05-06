@@ -98,8 +98,43 @@ function insert(model, table) {
         }
     })
 }
+
+function update(model, table, where){
+    return new Promise((resolve, reject) => {
+        if(isObject(model)){
+            const entry = [];
+            Object.keys(model).forEach(key => {
+                if(model.hasOwnProperty(key)){
+                    entry.push(`\`${key}\`='${model[key]}'`);
+                }
+            })
+            if(entry.length > 0){
+                let sql = `UPDATE \`${table}\` SET`
+                sql = `${sql} ${entry.join(',')} ${where}`;
+                debug && console.log(sql);
+                const conn = connect();
+                try {
+                    conn.query(sql, (err, result) => {
+                        if(err){
+                            reject(err)
+                        }else{
+                            resolve(result)
+                        }
+                    })
+                } catch (error) {
+                    reject(error)
+                } finally {
+                    conn.end()
+                }
+            }
+        }else{
+            reject(new Error('插入数据库失败，插入数据非对象'));
+        }
+    })
+}
 module.exports = {
     querySql,
     qeuryOne,
     insert,
+    update
 }

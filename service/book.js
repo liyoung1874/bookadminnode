@@ -67,6 +67,30 @@ function insertBook(book) {
   })
 }
 
+// 更新电子书
+function updateBook(book) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (book instanceof Book) {
+        const result = await getBook(book.fileName);
+        if (result) {
+          const model = book.toDB();
+          if(+result.book.updateType === 0){
+            reject(new Error('内置图书不能编辑'));
+          } else {
+            await db.update(model, 'book', `where fileName='${book.fileName}'`);
+            resolve();
+          }
+        }
+      } else {
+        reject(new Error('添加的电子书对象不合法'))
+      }
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
 // 获取电子书
 function getBook(fileName) {
   return new Promise(async (resolve, reject) => {
@@ -100,5 +124,6 @@ function getBook(fileName) {
 
 module.exports = {
   insertBook,
-  getBook
+  updateBook,
+  getBook,
 }
