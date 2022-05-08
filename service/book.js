@@ -75,7 +75,7 @@ function updateBook(book) {
         const result = await getBook(book.fileName);
         if (result) {
           const model = book.toDB();
-          if(+result.book.updateType === 0){
+          if (+result.book.updateType === 0) {
             reject(new Error('内置图书不能编辑'));
           } else {
             await db.update(model, 'book', `where fileName='${book.fileName}'`);
@@ -107,10 +107,10 @@ function getBook(fileName) {
         } else {
           book.cover = null;
         }
-        if(contentTree && contentTree.length > 0){
+        if (contentTree && contentTree.length > 0) {
           book.contentTree = Book.genContents(contentTree);
           resolve({ book });
-        }else{
+        } else {
           reject(new Error('电子书目录不存在'))
         }
       } else {
@@ -122,8 +122,64 @@ function getBook(fileName) {
   })
 }
 
+// 获取分类
+function getCategory() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sql = `select * from category order by category asc`;
+      const result = await db.querySql(sql);
+      const categoryList = [];
+      result.forEach(item => {
+        categoryList.push({
+          value: item.category,
+          label: item.categoryText,
+          num: item.num,
+        })
+      })
+      resolve(categoryList);
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+// 获取电子书列表
+function getBookList(query) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { title, author, category, pageNum = 1, pageSize = 30, sort } = query;
+      let sql = `select * from book`;
+      // 查询总数
+      let countSql = `select count(*) as count from book`;
+      let where = `where`;
+      const offset = (pageNum - 1) * pageSize;
+      title && (where = db.like(where, 'title', title));
+      author && (where = db.like(where, 'author', author));
+      category && (where = db.add(where, 'category', category));
+      if (where !== 'where') {
+        sql = `${sql} ${where}`;
+        countSql = `${countSql} ${where}`;
+      }
+      if (sort) {
+        const symbol = sort[0];
+        const column = sort.slice(1, sort.length);
+        const order = symbol === '+' ? 'asc' : 'desc';
+        sql = `${sql} order by \`${column}\` ${order}`;
+      }
+      sql = `${sql} limit ${pageSize} offset ${offset}`;
+      let list = await db.querySql(sql);
+      let count = await db.querySql(countSql);
+      resolve({ list, count: count[0].count });
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
 module.exports = {
   insertBook,
   updateBook,
   getBook,
+  getCategory,
+  getBookList
 }

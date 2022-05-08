@@ -78,4 +78,27 @@ router.get('/get', (req, res, next) => {
     }
 })
 
+
+// 获取图书分类
+router.get('/category', (req, res, next) => {
+    bookService.getCategory()
+        .then(category => {
+            new Result(category, '获取分类成功').success(res);
+        })
+        .catch(err => {
+            next(boom.badRequest(new Error('查询参数 fileName 不能为空')))
+        })
+})
+
+// 获取图书列表
+router.post('/list', (req, res, next) => {
+    const query = req.query; 
+    bookService.getBookList(query)
+        .then(({list, count}) => {
+            new Result({ list, count }, '获取电子书列表成功').success(res);
+        })
+        .catch(err => {
+            next(boom.badImplementation(err));
+        })
+})
 module.exports = router;
