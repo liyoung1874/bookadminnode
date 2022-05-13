@@ -1,6 +1,7 @@
 const Book = require('../module/book');
 const db = require('../db');
 const _ = require('lodash');
+const { reject } = require('lodash');
 
 // 判断电子书存在
 function exists(book) {
@@ -176,10 +177,33 @@ function getBookList(query) {
   })
 }
 
+// 删除电子书
+function deleteBook(fileName) {
+  return new Promise(async (resolve, reject) => {
+    let { book } = await getBook(fileName);
+    if (book) {
+      if (+book.updateType === 0) {
+        reject(new Error('内置图书不能删除'));
+      } else {
+        const bookObj = new Book(null, book);
+        const sql = `delete from book where fileName='${fileName}'`;
+        db.querySql(sql)
+          .then(() => {
+            bookObj.reset();
+            resolve();
+          })
+      }
+    } else {
+      reject(new Error('电子书不存在'))
+    }
+  })
+}
+
 module.exports = {
   insertBook,
   updateBook,
   getBook,
   getCategory,
-  getBookList
+  getBookList,
+  deleteBook
 }

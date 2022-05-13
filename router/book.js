@@ -8,7 +8,8 @@ const upload = multer({ dest: `${UPLOAD_PATH}` });
 const Book = require('../module/book');
 const boom = require('boom');
 const { decode } = require('../utils');
-const bookService = require('../service/book')
+const bookService = require('../service/book');
+
 // 定义接口
 // 电子书文件上传
 router.post('/upload',
@@ -32,7 +33,7 @@ router.post('/upload',
 // 新增电子书
 router.post('/create', (req, res, next) => {
     const decoded = decode(req);
-    if(decoded && decoded.username){
+    if (decoded && decoded.username) {
         req.body.username = decoded.username;
     }
     const book = new Book(null, req.body);
@@ -48,7 +49,7 @@ router.post('/create', (req, res, next) => {
 // 更新电子书
 router.post('/update', (req, res, next) => {
     const decoded = decode(req);
-    if(decoded && decoded.username){
+    if (decoded && decoded.username) {
         req.body.username = decoded.username;
     }
     const book = new Book(null, req.body);
@@ -61,13 +62,12 @@ router.post('/update', (req, res, next) => {
         })
 })
 
-
 // 查询电子书
 router.get('/get', (req, res, next) => {
     const { fileName } = req.query;
-    if(!fileName){
+    if (!fileName) {
         next(boom.badRequest(new Error('查询参数 fileName 不能为空')))
-    }else{
+    } else {
         bookService.getBook(fileName)
             .then((book) => {
                 new Result(book, '获取电子书成功').success(res);
@@ -77,7 +77,6 @@ router.get('/get', (req, res, next) => {
             })
     }
 })
-
 
 // 获取图书分类
 router.get('/category', (req, res, next) => {
@@ -92,13 +91,29 @@ router.get('/category', (req, res, next) => {
 
 // 获取图书列表
 router.post('/list', (req, res, next) => {
-    const query = req.query; 
+    const query = req.query;
     bookService.getBookList(query)
-        .then(({list, count}) => {
+        .then(({ list, count }) => {
             new Result({ list, count }, '获取电子书列表成功').success(res);
         })
         .catch(err => {
             next(boom.badImplementation(err));
         })
+})
+
+// 删除图书
+router.get('/delete', (req, res, next) => {
+    const { fileName } = req.query;
+    if (!fileName) {
+        next(boom.badRequest(new Error('参数 fileName 不能为空')))
+    } else {
+        bookService.deleteBook(fileName)
+            .then(() => {
+                new Result('删除电子书成功').success(res);
+            })
+            .catch((error) => {
+                next(boom.badImplementation(error));
+            })
+    }
 })
 module.exports = router;

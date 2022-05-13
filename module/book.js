@@ -284,6 +284,7 @@ class Book {
 
     /* 删除电子书文件 */
     reset() {
+        console.log(this);
         if (Book.pathExists(this.filePath)) {
             fs.unlinkSync(Book.genPath(this.filePath));
         }
