@@ -85,7 +85,7 @@ router.get('/category', (req, res, next) => {
             new Result(category, '获取分类成功').success(res);
         })
         .catch(err => {
-            next(boom.badRequest(new Error('查询参数 fileName 不能为空')))
+            next(boom.badRequest(err))
         })
 })
 
@@ -116,4 +116,5 @@ router.get('/delete', (req, res, next) => {
             })
     }
 })
+
 module.exports = router;
